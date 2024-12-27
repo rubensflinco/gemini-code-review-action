@@ -68,7 +68,7 @@ inputs:
   pull_request_chunk_size:
     description: "Pull request chunk size"
     required: false
-    default: "3500"
+    default: "2000000"
   log_level:
     description: "Log level"
     required: false
