@@ -87,21 +87,28 @@ branding:
   color: "blue"
 
 runs:
-  using: docker
-  image: Dockerfile
-  env:
-    GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
-    GITHUB_TOKEN: ${{ inputs.github_token }}
-    GITHUB_REPOSITORY: ${{ inputs.github_repository }}
-    GITHUB_PULL_REQUEST_NUMBER: ${{ inputs.github_pull_request_number }}
-    GIT_COMMIT_HASH: ${{ inputs.git_commit_hash }}
-    PULL_REQUEST_DIFF: ${{ inputs.pull_request_diff }}
-  args:
-    - "--model=${{ inputs.model }}"
-    - "--extra-prompt=${{ inputs.extra_prompt }}"
-    - "--temperature=${{ inputs.temperature }}"
-    - "--max-tokens=${{ inputs.max_tokens }}"
-    - "--top-p=${{ inputs.top_p }}"
-    - "--frequency-penalty=${{ inputs.frequency_penalty }}"
-    - "--presence-penalty=${{ inputs.presence_penalty }}"
-    - "--diff-chunk-size=${{ inputs.pull_request_chunk_size }}"
+  using: "composite"
+  steps:
+    - name: Write diff to file
+      shell: bash
+      run: |
+        echo "${{ inputs.pull_request_diff }}" > /tmp/pr.diff
+  - name: Run main action
+    uses: docker://gemini-code-review:latest
+    env:
+      GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+      GITHUB_TOKEN: ${{ inputs.github_token }}
+      GITHUB_REPOSITORY: ${{ inputs.github_repository }}
+      GITHUB_PULL_REQUEST_NUMBER: ${{ inputs.github_pull_request_number }}
+      GIT_COMMIT_HASH: ${{ inputs.git_commit_hash }}
+      PULL_REQUEST_DIFF: ${{ inputs.pull_request_diff }}
+    with:
+      args: >-
+        --model=${{ inputs.model }}
+        --extra-prompt=${{ inputs.extra_prompt }}
+        --temperature=${{ inputs.temperature }}
+        --max-tokens=${{ inputs.max_tokens }}
+        --top-p=${{ inputs.top_p }}
+        --frequency-penalty=${{ inputs.frequency_penalty }}
+        --presence-penalty=${{ inputs.presence_penalty }}
+        --diff-chunk-size=${{ inputs.pull_request_chunk_size }}

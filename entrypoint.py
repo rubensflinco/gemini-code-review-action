@@ -29,8 +29,13 @@ def check_required_env_vars():
         "GITHUB_REPOSITORY",
         "GITHUB_PULL_REQUEST_NUMBER",
         "GIT_COMMIT_HASH",
-        "PULL_REQUEST_DIFF",
     ]
+    # if running locally, we only check gemini api key
+    if os.getenv("LOCAL") is True:
+        required_env_vars = [
+            "GEMINI_API_KEY",
+        ]
+
     for required_env_var in required_env_vars:
         if os.getenv(required_env_var) is None:
             raise ValueError(f"{required_env_var} is not set")
@@ -210,7 +215,13 @@ def format_review_comment(summarized_review: str, chunked_reviews: List[str]) ->
 
 
 @click.command()
-@click.option("--diff", type=click.STRING, required=True, help="Pull request diff")
+@click.option(
+    "--diff-file",
+    type=click.STRING,
+    default="/tmp/pr.diff",
+    required=True,
+    help="Pull request diff",
+)
 @click.option(
     "--diff-chunk-size",
     type=click.INT,
@@ -253,6 +264,7 @@ def format_review_comment(summarized_review: str, chunked_reviews: List[str]) ->
     help="Presence penalty",
 )
 def main(
+    diff_file: str,
     diff_chunk_size: int,
     model: str,
     extra_prompt: str,
@@ -268,7 +280,8 @@ def main(
     # Check if necessary environment variables are set or not
     check_required_env_vars()
 
-    diff = os.environ.get("PULL_REQUEST_DIFF", "")
+    with open(diff_file, "r", encoding="utf-8") as f:
+        diff = f.read()
 
     # Set the Gemini API key
     api_key = os.getenv("GEMINI_API_KEY")
@@ -293,6 +306,11 @@ def main(
     review_comment = format_review_comment(
         summarized_review=summarized_review, chunked_reviews=chunked_reviews
     )
+
+    # if it is running in a local environment don't try to create a comment
+    if os.getenv("LOCAL") is not None:
+        logger.info(f"Review comment: {review_comment}")
+        return
 
     # Create a comment to a pull request
     create_a_comment_to_pull_request(
