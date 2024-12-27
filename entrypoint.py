@@ -279,8 +279,8 @@ def main(
     logger.level(log_level)
     # Check if necessary environment variables are set or not
     check_required_env_vars()
-
-    with open(diff_file, "r", encoding="utf-8") as f:
+    file = "/tmp/" + os.path.basename(diff_file)
+    with open(file, "r", encoding="utf-8") as f:
         diff = f.read()
 
     # Set the Gemini API key
