@@ -16,6 +16,7 @@ from typing import List
 
 import click
 import google.generativeai as genai
+from google.api_core import exceptions as google_exceptions
 import requests
 from loguru import logger
 
@@ -83,6 +84,26 @@ def chunk_string(input_string: str, chunk_size) -> List[str]:
     return chunked_inputs
 
 
+def handle_api_error(error, attempt, max_retries=3, initial_wait=15):
+    """Handle API errors with exponential backoff"""
+    if isinstance(error, google_exceptions.ResourceExhausted):
+        # Rate limit error
+        if attempt < max_retries:
+            wait_time = initial_wait * (2**attempt)  # Exponential backoff
+            logger.warning(
+                f"Rate limit hit. Waiting {wait_time} seconds before retry..."
+            )
+            time.sleep(wait_time)
+            return True
+    elif isinstance(error, google_exceptions.DeadlineExceeded):
+        logger.error("API request timed out")
+    elif isinstance(error, google_exceptions.InvalidArgument):
+        logger.error("Invalid API request")
+    else:
+        logger.error(f"Unexpected API error: {str(error)}")
+    return False
+
+
 def get_review(
     model: str,
     diff: str,
@@ -112,17 +133,33 @@ def get_review(
     # Get summary by chunk
     chunked_reviews = []
     for chunked_diff in chunked_diff_list:
-        convo = genai_model.start_chat(
-            history=[
-                {"role": "user", "parts": [review_prompt]},
-                {"role": "model", "parts": ["Ok"]},
-            ]
-        )
-        convo.send_message(chunked_diff)
-        review_result = convo.last.text
-        logger.debug(f"Response AI: {review_result}")
-        chunked_reviews.append(review_result)
-        time.sleep(5)  # wating for 5 seconds to avoid rate limit
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                convo = genai_model.start_chat(
+                    history=[
+                        {"role": "user", "parts": [review_prompt]},
+                        {"role": "model", "parts": ["Ok"]},
+                    ]
+                )
+                response = convo.send_message(chunked_diff)
+                review_result = getattr(convo.last, "text", response.text)
+            except Exception as e:
+                logger.error(f"Attempt {attempt + 1}/{max_attempts} failed")
+                should_retry = handle_api_error(
+                    e, attempt=attempt, max_retries=max_attempts
+                )
+                if not should_retry or attempt == max_attempts - 1:
+                    review_result = None
+                    break
+                continue
+
+            if review_result is None:
+                raise ValueError("Failed to get model response")
+            logger.debug(f"Response AI: {review_result}")
+            chunked_reviews.append(review_result)
+            break
+        time.sleep(10)  # wating for 10 seconds to avoid rate limit
     # If the chunked reviews are only one, return it
 
     if len(chunked_reviews) == 1:
@@ -136,9 +173,24 @@ def get_review(
         summarize_prompt = get_summarize_prompt()
 
     chunked_reviews_join = "\n".join(chunked_reviews)
-    convo = genai_model.start_chat(history=[])
-    convo.send_message(summarize_prompt + "\n\n" + chunked_reviews_join)
-    summarized_review = convo.last.text
+    summary_response = None
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            convo = genai_model.start_chat(history=[])
+            summary_response = convo.send_message(
+                summarize_prompt + "\n\n" + chunked_reviews_join
+            )
+        except Exception as e:
+            logger.error(f"Attempt {attempt + 1}/{max_attempts} failed")
+            should_retry = handle_api_error(
+                e, attempt=attempt, max_retries=max_attempts
+            )
+            if not should_retry or attempt == max_attempts - 1:
+                summary_response = None
+                break
+            continue
+    summarized_review = getattr(convo.last, "text", summary_response.text)
     logger.debug(f"Response AI: {summarized_review}")
     return chunked_reviews, summarized_review
 
@@ -214,7 +266,7 @@ def main(
     # Set log level
     logger.level(log_level)
     # Check if necessary environment variables are set or not
-    check_required_env_vars()
+    # check_required_env_vars()
 
     # Set the Gemini API key
     api_key = os.getenv("GEMINI_API_KEY")
@@ -239,6 +291,7 @@ def main(
     review_comment = format_review_comment(
         summarized_review=summarized_review, chunked_reviews=chunked_reviews
     )
+
     # Create a comment to a pull request
     create_a_comment_to_pull_request(
         github_token=os.getenv("GITHUB_TOKEN"),
