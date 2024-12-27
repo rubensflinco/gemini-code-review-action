@@ -280,6 +280,10 @@ def main(
     # Check if necessary environment variables are set or not
     check_required_env_vars()
     file = "/tmp/" + os.path.basename(diff_file)
+    print(file)
+    # List the content of the /tmp folder
+    tmp_files = os.popen("ls -lah /tmp").read()
+    logger.info(f"Files in /tmp: {tmp_files}")
     with open(file, "r", encoding="utf-8") as f:
         diff = f.read()
 

@@ -6,39 +6,39 @@ on:
             - main
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        permissions:
-          contents: read
-          pull-requests: write
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      PR_DIFF_PATH: /tmp/sarasa.diff
+      GEMINI_MODEL: "gemini-1.5-pro"
+      LOCAL: "True"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: "Get diff of the pull request"
+        id: get_diff
+        shell: bash
         env:
-          PR_DIFF_PATH: /tmp/pr.diff
-          GEMINI_MODEL: "gemini-1.5-pro"
-          LOCAL: "True"
-
-        steps:
-        - name: Checkout repository
-          uses: actions/checkout@v4
-
-        - name: "Get diff of the pull request"
-          id: get_diff
-          shell: bash
-          env:
             PULL_REQUEST_HEAD_REF: "${{ github.event.pull_request.head.ref }}"
             PULL_REQUEST_BASE_REF: "${{ github.event.pull_request.base.ref }}"
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          run: |-
+        run: |-
             git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:"
             git fetch origin "${{ env.PULL_REQUEST_HEAD_REF }}"
             git fetch origin "${{ env.PULL_REQUEST_BASE_REF }}"
             git checkout "${{ env.PULL_REQUEST_HEAD_REF }}"
             git diff "origin/${{ env.PULL_REQUEST_BASE_REF }}" > "${{ env.PR_DIFF_PATH }}"
-            cat /tmp/pr.diff
+            cat ${{ env.PR_DIFF_PATH }}
 
-        - uses: ./
-          name: "Code Review by Gemini AI"
-          id: review
-          with:
+      - uses: ./
+        name: "Code Review by Gemini AI"
+        id: review
+        with:
             gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
             github_token: ${{ secrets.GITHUB_TOKEN }}
             github_repository: ${{ github.repository }}
