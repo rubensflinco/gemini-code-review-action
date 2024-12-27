@@ -9,7 +9,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+default_language_version:
+  python: python3.12
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -23,11 +24,11 @@ repos:
       - id: isort
         name: isort (python)
   - repo: https://github.com/pycqa/pylint
-    rev: v2.17.2
+    rev: v3.3.3
     hooks:
     -   id: pylint
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.24
+    rev: v1.7.4
     hooks:
       - id: actionlint-docker
   - repo: https://github.com/hadolint/hadolint
