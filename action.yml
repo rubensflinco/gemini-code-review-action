@@ -86,24 +86,35 @@ branding:
   icon: "code"
   color: "blue"
 
-runs:
-  using: docker
-  image: Dockerfile
-  env:
-    GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
-    GITHUB_TOKEN: ${{ inputs.github_token }}
-    GITHUB_REPOSITORY: ${{ inputs.github_repository }}
-    GITHUB_PULL_REQUEST_NUMBER: ${{ inputs.github_pull_request_number }}
-    GIT_COMMIT_HASH: ${{ inputs.git_commit_hash }}
-  volumes:
-    - ${{ inputs.pull_request_diff_file }}:/tmp
-  args:
-    - "--model=${{ inputs.model }}"
-    - "--extra-prompt=${{ inputs.extra_prompt }}"
-    - "--temperature=${{ inputs.temperature }}"
-    - "--max-tokens=${{ inputs.max_tokens }}"
-    - "--top-p=${{ inputs.top_p }}"
-    - "--frequency-penalty=${{ inputs.frequency_penalty }}"
-    - "--presence-penalty=${{ inputs.presence_penalty }}"
-    - "--diff-chunk-size=${{ inputs.pull_request_chunk_size }}"
-    - "--diff-file=${{ inputs.pull_request_diff_file }}"
+jobs:
+  build-docker-image:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t gemini-code-review:latest .
+  ai-review:
+    needs: [build-docker-image]
+    runs-on: ubuntu-latest
+    container:
+      image: gemini-code-review:latest
+      env:
+        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        GITHUB_REPOSITORY: ${{ inputs.github_repository }}
+        GITHUB_PULL_REQUEST_NUMBER: ${{ inputs.github_pull_request_number }}
+        GIT_COMMIT_HASH: ${{ inputs.git_commit_hash }}
+      volumes:
+        - ${{ inputs.pull_request_diff_file }}:/tmp
+    args:
+      - "--model=${{ inputs.model }}"
+      - "--extra-prompt=${{ inputs.extra_prompt }}"
+      - "--temperature=${{ inputs.temperature }}"
+      - "--max-tokens=${{ inputs.max_tokens }}"
+      - "--top-p=${{ inputs.top_p }}"
+      - "--frequency-penalty=${{ inputs.frequency_penalty }}"
+      - "--presence-penalty=${{ inputs.presence_penalty }}"
+      - "--diff-chunk-size=${{ inputs.pull_request_chunk_size }}"
+      - "--diff-file=${{ inputs.pull_request_diff_file }}"

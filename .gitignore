@@ -133,3 +133,4 @@ dmypy.json
 # VSCode
 .vscode
 test/fixtures/test.diff
+.github/configs/.secrets.txt

@@ -1,0 +1,17 @@
+{
+  "pull_request": {
+    "head": {
+      "ref": "bugfix-large-diff",
+      "sha": "18c4fa5f57e04f8d124b8d3e95ac747daab23c2a"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "18c4fa5f57e04f8d124b8d3e95ac747daab23c2a"
+    },
+    "labels": [
+      {
+        "name": "Deployed-to-Staging"
+      }
+    ]
+  }
+}
