@@ -29,6 +29,7 @@ def check_required_env_vars():
         "GITHUB_REPOSITORY",
         "GITHUB_PULL_REQUEST_NUMBER",
         "GIT_COMMIT_HASH",
+        "PULL_REQUEST_DIFF",
     ]
     for required_env_var in required_env_vars:
         if os.getenv(required_env_var) is None:
@@ -252,7 +253,6 @@ def format_review_comment(summarized_review: str, chunked_reviews: List[str]) ->
     help="Presence penalty",
 )
 def main(
-    diff: str,
     diff_chunk_size: int,
     model: str,
     extra_prompt: str,
@@ -266,7 +266,9 @@ def main(
     # Set log level
     logger.level(log_level)
     # Check if necessary environment variables are set or not
-    # check_required_env_vars()
+    check_required_env_vars()
+
+    diff = os.environ.get("PULL_REQUEST_DIFF", "")
 
     # Set the Gemini API key
     api_key = os.getenv("GEMINI_API_KEY")
