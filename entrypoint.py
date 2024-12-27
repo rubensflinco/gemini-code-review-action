@@ -104,7 +104,7 @@ def handle_api_error(error, attempt, max_retries=3, initial_wait=15):
     elif isinstance(error, google_exceptions.DeadlineExceeded):
         logger.error("API request timed out")
     elif isinstance(error, google_exceptions.InvalidArgument):
-        logger.error("Invalid API request")
+        logger.error(f"Invalid API request: {str(error)}")
     else:
         logger.error(f"Unexpected API error: {str(error)}")
     return False
