@@ -10,14 +10,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import json
-import time
 import os
+import time
 from typing import List
 
 import click
 import google.generativeai as genai
-from google.api_core import exceptions as google_exceptions
 import requests
+from google.api_core import exceptions as google_exceptions
 from loguru import logger
 
 
