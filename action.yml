@@ -68,7 +68,7 @@ inputs:
   pull_request_chunk_size:
     description: "Pull request chunk size"
     required: false
-    default: "2000000"
+    default: "3500"
   log_level:
     description: "Log level"
     required: false
@@ -87,43 +87,21 @@ branding:
   color: "blue"
 
 runs:
-  using: "composite"
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Build Docker image
-      shell: bash
-      run: |
-        docker build -t gemini-code-review:latest .
-    - name: Run AI Review
-      shell: bash
-      env:
-        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-        GITHUB_REPOSITORY: ${{ inputs.github_repository }}
-        GITHUB_PULL_REQUEST_NUMBER: ${{ inputs.github_pull_request_number }}
-        GIT_COMMIT_HASH: ${{ inputs.git_commit_hash }}
-      run: |
-        set -xe
-        chmod 770 ${{ inputs.pull_request_diff_file }}
-        echo ${{ inputs.pull_request_diff_file }}
-        ls -lah ${{ inputs.pull_request_diff_file }}
-        cat ${{ inputs.pull_request_diff_file }}
-        docker run \
-          --mount type=bind,src=${{ inputs.pull_request_diff_file }},dst=/tmp/pr.diff,ro \
-          -e GEMINI_API_KEY \
-          -e GITHUB_TOKEN \
-          -e GITHUB_REPOSITORY \
-          -e GITHUB_PULL_REQUEST_NUMBER \
-          -e GIT_COMMIT_HASH \
-          gemini-code-review:latest \
-          --model="${{ inputs.model }}" \
-          --extra-prompt="${{ inputs.extra_prompt }}" \
-          --temperature="${{ inputs.temperature }}" \
-          --max-tokens="${{ inputs.max_tokens }}" \
-          --top-p="${{ inputs.top_p }}" \
-          --frequency-penalty="${{ inputs.frequency_penalty }}" \
-          --presence-penalty="${{ inputs.presence_penalty }}" \
-          --diff-chunk-size="${{ inputs.pull_request_chunk_size }}" \
-          --diff-file=/tmp/pr.diff
+  using: docker
+  image: Dockerfile
+  env:
+    GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    GITHUB_REPOSITORY: ${{ inputs.github_repository }}
+    GITHUB_PULL_REQUEST_NUMBER: ${{ inputs.github_pull_request_number }}
+    GIT_COMMIT_HASH: ${{ inputs.git_commit_hash }}
+  args:
+    - "--model=${{ inputs.model }}"
+    - "--extra-prompt=${{ inputs.extra_prompt }}"
+    - "--temperature=${{ inputs.temperature }}"
+    - "--max-tokens=${{ inputs.max_tokens }}"
+    - "--top-p=${{ inputs.top_p }}"
+    - "--frequency-penalty=${{ inputs.frequency_penalty }}"
+    - "--presence-penalty=${{ inputs.presence_penalty }}"
+    - "--diff-chunk-size=${{ inputs.pull_request_chunk_size }}"
+    - "--diff-file=${{ inputs.pull_request_diff_file }}"
