@@ -108,8 +108,10 @@ runs:
       python-version: "3.12.3"
       cache: "pip"
   - name: Install dependencies
+    shell: bash
     run: pip install -r requirements.txt
   - name: Run main action
+    shell: bash
     env:
       GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
       GITHUB_TOKEN: ${{ inputs.github_token }}
