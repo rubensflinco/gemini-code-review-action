@@ -27,7 +27,6 @@ class AiReviewConfig(TypedDict):
     extra_prompt: str
     prompt_chunk_size: int
     temperature: float = 1
-    max_tokens: int = 256
     top_p: float = 0.95
     top_k: int = 0
     frequency_penalty: float = 0.0
@@ -132,7 +131,6 @@ def get_review(config: AiReviewConfig) -> List[str]:
     extra_prompt = config["extra_prompt"]
     prompt_chunk_size = config["prompt_chunk_size"]
     temperature = config.get("temperature", 1)
-    max_tokens = config.get("max_tokens", 256)
     top_p = config.get("top_p", 0.95)
     top_k = config.get("top_k", 0)
     frequency_penalty = config.get("frequency_penalty", 0.0)
@@ -146,7 +144,6 @@ def get_review(config: AiReviewConfig) -> List[str]:
         "temperature": temperature,
         "top_p": top_p,
         "top_k": top_k,
-        "max_tokens": max_tokens,
         "max_output_tokens": max_output_tokens,
         "frequency_penalty": frequency_penalty,
         "presence_penalty": presence_penalty,
@@ -271,9 +268,6 @@ def format_review_comment(summarized_review: str, chunked_reviews: List[str]) ->
 @click.option(
     "--temperature", type=click.FLOAT, required=False, default=0.1, help="Temperature"
 )
-@click.option(
-    "--max-tokens", type=click.INT, required=False, default=512, help="Max tokens"
-)
 @click.option("--top-p", type=click.FLOAT, required=False, default=1.0, help="Top N")
 @click.option(
     "--frequency-penalty",
@@ -302,7 +296,6 @@ def main(
     model: str,
     extra_prompt: str,
     temperature: float,
-    max_tokens: int,
     top_p: float,
     frequency_penalty: float,
     presence_penalty: float,
@@ -331,7 +324,6 @@ def main(
         "extra_prompt": extra_prompt,
         "model": model,
         "temperature": temperature,
-        "max_tokens": max_tokens,
         "top_p": top_p,
         "frequency_penalty": frequency_penalty,
         "presence_penalty": presence_penalty,

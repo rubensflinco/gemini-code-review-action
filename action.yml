@@ -46,10 +46,6 @@ inputs:
     description: "Temperature for GPT"
     required: false
     default: "0.7"
-  max_tokens:
-    description: "Max tokens for GPT"
-    required: false
-    default: "256"
   top_p:
     description: "Top p for GPT"
     required: false
@@ -99,7 +95,6 @@ runs:
     - "--model=${{ inputs.model }}"
     - "--extra-prompt=${{ inputs.extra_prompt }}"
     - "--temperature=${{ inputs.temperature }}"
-    - "--max-tokens=${{ inputs.max_tokens }}"
     - "--top-p=${{ inputs.top_p }}"
     - "--frequency-penalty=${{ inputs.frequency_penalty }}"
     - "--presence-penalty=${{ inputs.presence_penalty }}"
