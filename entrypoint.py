@@ -12,13 +12,27 @@
 import json
 import os
 import time
-from typing import List
+from typing import List, TypedDict
 
 import click
 import google.generativeai as genai
 import requests
 from google.api_core import exceptions as google_exceptions
 from loguru import logger
+
+
+class AiReviewConfig(TypedDict):
+    model: str
+    diff: str
+    extra_prompt: str
+    prompt_chunk_size: int
+    temperature: float = 1
+    max_tokens: int = 256
+    top_p: float = 0.95
+    top_k: int = 0
+    frequency_penalty: float = 0.0
+    presence_penalty: float = 0.0
+    max_output_tokens: int = 8192
 
 
 def check_required_env_vars():
@@ -44,6 +58,7 @@ def check_required_env_vars():
 def get_review_prompt(extra_prompt: str = "") -> str:
     """Get a prompt template"""
     template = f"""
+    {extra_prompt}.
     This is a pull request or part of a pull request if the pull request is very large.
     Suppose you review this PR as an excellent software engineer and an excellent security engineer.
     Can you tell me the issues with differences in a pull request and provide suggestions to improve it?
@@ -110,26 +125,31 @@ def handle_api_error(error, attempt, max_retries=3, initial_wait=15):
     return False
 
 
-def get_review(
-    model: str,
-    diff: str,
-    extra_prompt: str,
-    temperature: float,
-    max_tokens: int,
-    top_p: float,
-    frequency_penalty: float,
-    presence_penalty: float,
-    prompt_chunk_size: int,
-):
+def get_review(config: AiReviewConfig) -> List[str]:
     """Get a review"""
+    model = config["model"]
+    diff = config["diff"]
+    extra_prompt = config["extra_prompt"]
+    prompt_chunk_size = config["prompt_chunk_size"]
+    temperature = config.get("temperature", 1)
+    max_tokens = config.get("max_tokens", 256)
+    top_p = config.get("top_p", 0.95)
+    top_k = config.get("top_k", 0)
+    frequency_penalty = config.get("frequency_penalty", 0.0)
+    presence_penalty = config.get("presence_penalty", 0.0)
+    max_output_tokens = config.get("max_output_tokens", 8192)
     # Chunk the prompt
     review_prompt = get_review_prompt(extra_prompt=extra_prompt)
     chunked_diff_list = chunk_string(input_string=diff, chunk_size=prompt_chunk_size)
+    logger.info(f"Created {len(chunked_diff_list)} from diff")
     generation_config = {
-        "temperature": 1,
-        "top_p": 0.95,
-        "top_k": 0,
-        "max_output_tokens": 8192,
+        "temperature": temperature,
+        "top_p": top_p,
+        "top_k": top_k,
+        "max_tokens": max_tokens,
+        "max_output_tokens": max_output_tokens,
+        "frequency_penalty": frequency_penalty,
+        "presence_penalty": presence_penalty,
     }
     genai_model = genai.GenerativeModel(
         model_name=model,
@@ -150,7 +170,13 @@ def get_review(
                 )
                 response = convo.send_message(chunked_diff)
                 review_result = getattr(convo.last, "text", response.text)
-            except Exception as e:
+            except (
+                google_exceptions.ResourceExhausted,
+                google_exceptions.DeadlineExceeded,
+                google_exceptions.InvalidArgument,
+                google_exceptions.GoogleAPICallError,
+                google_exceptions.RetryError,
+            ) as e:
                 logger.error(f"Attempt {attempt + 1}/{max_attempts} failed")
                 should_retry = handle_api_error(
                     e, attempt=attempt, max_retries=max_attempts
@@ -187,7 +213,13 @@ def get_review(
             summary_response = convo.send_message(
                 summarize_prompt + "\n\n" + chunked_reviews_join
             )
-        except Exception as e:
+        except (
+            google_exceptions.ResourceExhausted,
+            google_exceptions.DeadlineExceeded,
+            google_exceptions.InvalidArgument,
+            google_exceptions.GoogleAPICallError,
+            google_exceptions.RetryError,
+        ) as e:
             logger.error(f"Attempt {attempt + 1}/{max_attempts} failed")
             should_retry = handle_api_error(
                 e, attempt=attempt, max_retries=max_attempts
@@ -214,6 +246,7 @@ def format_review_comment(summarized_review: str, chunked_reviews: List[str]) ->
     return review
 
 
+# pylint: disable=too-many-positional-arguments
 @click.command()
 @click.option(
     "--diff-file",
@@ -293,17 +326,18 @@ def main(
     genai.configure(api_key=api_key)
 
     # Request a code review
-    chunked_reviews, summarized_review = get_review(
-        diff=diff,
-        extra_prompt=extra_prompt,
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        top_p=top_p,
-        frequency_penalty=frequency_penalty,
-        presence_penalty=presence_penalty,
-        prompt_chunk_size=diff_chunk_size,
-    )
+    review_conf: AiReviewConfig = {
+        "diff": diff,
+        "extra_prompt": extra_prompt,
+        "model": model,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "top_p": top_p,
+        "frequency_penalty": frequency_penalty,
+        "presence_penalty": presence_penalty,
+        "prompt_chunk_size": diff_chunk_size,
+    }
+    chunked_reviews, summarized_review = get_review(review_conf)
     logger.debug(f"Summarized review: {summarized_review}")
     logger.debug(f"Chunked reviews: {chunked_reviews}")
 
