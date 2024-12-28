@@ -29,8 +29,6 @@ class AiReviewConfig(TypedDict):
     temperature: float = 1
     top_p: float = 0.95
     top_k: int = 0
-    frequency_penalty: float = 0.0
-    presence_penalty: float = 0.0
     max_output_tokens: int = 8192
 
 
@@ -133,8 +131,6 @@ def get_review(config: AiReviewConfig) -> List[str]:
     temperature = config.get("temperature", 1)
     top_p = config.get("top_p", 0.95)
     top_k = config.get("top_k", 0)
-    frequency_penalty = config.get("frequency_penalty", 0.0)
-    presence_penalty = config.get("presence_penalty", 0.0)
     max_output_tokens = config.get("max_output_tokens", 8192)
     # Chunk the prompt
     review_prompt = get_review_prompt(extra_prompt=extra_prompt)
@@ -145,8 +141,6 @@ def get_review(config: AiReviewConfig) -> List[str]:
         "top_p": top_p,
         "top_k": top_k,
         "max_output_tokens": max_output_tokens,
-        "frequency_penalty": frequency_penalty,
-        "presence_penalty": presence_penalty,
     }
     genai_model = genai.GenerativeModel(
         model_name=model,
@@ -270,25 +264,11 @@ def format_review_comment(summarized_review: str, chunked_reviews: List[str]) ->
 )
 @click.option("--top-p", type=click.FLOAT, required=False, default=1.0, help="Top N")
 @click.option(
-    "--frequency-penalty",
-    type=click.FLOAT,
-    required=False,
-    default=0.0,
-    help="Frequency penalty",
-)
-@click.option(
-    "--presence-penalty",
-    type=click.FLOAT,
-    required=False,
-    default=0.0,
-    help="Presence penalty",
-)
-@click.option(
     "--log-level",
     type=click.STRING,
     required=False,
     default="INFO",
-    help="Presence penalty",
+    help="Log level",
 )
 def main(
     diff_file: str,
@@ -297,8 +277,6 @@ def main(
     extra_prompt: str,
     temperature: float,
     top_p: float,
-    frequency_penalty: float,
-    presence_penalty: float,
     log_level: str,
 ):
     # Set log level
@@ -325,8 +303,6 @@ def main(
         "model": model,
         "temperature": temperature,
         "top_p": top_p,
-        "frequency_penalty": frequency_penalty,
-        "presence_penalty": presence_penalty,
         "prompt_chunk_size": diff_chunk_size,
     }
     chunked_reviews, summarized_review = get_review(review_conf)

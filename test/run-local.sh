@@ -27,6 +27,4 @@ docker run \
     --temperature=0.7 \
     --max-tokens=250 \
     --top-p=1 \
-    --frequency-penalty=0.0 \
-    --presence-penalty=0.0 \
     --diff-chunk-size=2000000
