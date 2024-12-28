@@ -14,7 +14,7 @@ We have to set a GitHub Actions secret `GEMINI_API_KEY` to use the Gemini API so
 - `github_repository`: The GitHub repository to post a review comment.
 - `github_pull_request_number`: The GitHub pull request number to post a review comment.
 - `git_commit_hash`: The git commit hash to post a review comment.
-- `pull_request_diff`: The diff of the pull request to generate a review comment.
+- `pull_request_diff_file`: The path to the git diff of the pull request to generate a review comment.
 - `pull_request_diff_chunk_size`: The chunk size of the diff of the pull request to generate a review comment.
 - `extra_prompt`: The extra prompt to generate a review comment.
 - `model`: The model to generate a review comment. We can use a model which is available.
@@ -38,6 +38,8 @@ name: "Code Review by Gemini AI"
 
 on:
   pull_request:
+env:
+  GEMINI_MODEL: "gemini-1.5-pro-latest"
 
 jobs:
   review:
@@ -45,8 +47,10 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    env:
+      PR_DIFF_PATH: "pull-request.diff"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: "Get diff of the pull request"
         id: get_diff
         shell: bash
@@ -57,13 +61,8 @@ jobs:
           git fetch origin "${{ env.PULL_REQUEST_HEAD_REF }}"
           git fetch origin "${{ env.PULL_REQUEST_BASE_REF }}"
           git checkout "${{ env.PULL_REQUEST_HEAD_REF }}"
-          git diff "origin/${{ env.PULL_REQUEST_BASE_REF }}" > "diff.txt"
-          {
-            echo "pull_request_diff<<EOF";
-            cat "diff.txt";
-            echo 'EOF';
-          } >> $GITHUB_OUTPUT
-      - uses: rubensflinco/gemini-code-review-action@1.0.5
+          git diff "origin/${{ env.PULL_REQUEST_BASE_REF }}" > "${{ env.PR_DIFF_PATH }}"
+      - uses: Stone-IT-Cloud/gemini-code-review-action@1.0.5
         name: "Code Review by Gemini AI"
         id: review
         with:
@@ -75,8 +74,8 @@ jobs:
           model: "gemini-1.5-pro-latest"
           pull_request_diff: |-
             ${{ steps.get_diff.outputs.pull_request_diff }}
-          pull_request_chunk_size: "3500"
+          pull_request_chunk_size: "100000"
           extra_prompt: |-
-            Sempre responda em português brasileiro!
+            Always response in English
           log_level: "DEBUG"
 ```
