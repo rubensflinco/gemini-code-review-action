@@ -62,7 +62,7 @@ jobs:
           git fetch origin "${{ env.PULL_REQUEST_BASE_REF }}"
           git checkout "${{ env.PULL_REQUEST_HEAD_REF }}"
           git diff "origin/${{ env.PULL_REQUEST_BASE_REF }}" > "${{ env.PR_DIFF_PATH }}"
-      - uses: Stone-IT-Cloud/gemini-code-review-action@1.0.5
+      - uses: Stone-IT-Cloud/gemini-code-review-action@1.0.3
         name: "Code Review by Gemini AI"
         id: review
         with:
