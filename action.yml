@@ -1,90 +1,90 @@
-#  Licensed under the Apache License, Version 2.0 (the "License");
+#  Licensed under the Apache License, Version 2.0 (the 'License');
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
 #
 #          http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
+#  distributed under the License is distributed on an 'AS IS' BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-name: "Code Review by Gemini AI"
-description: "Automatically create a comment about differences in a pull request by Gemini AI"
+name: 'Code Review by Gemini AI'
+description: 'Automatically create a comment about differences in a pull request by Gemini AI'
 
-author: "rubensflinco"
+author: 'rubensflinco'
 
 inputs:
   gemini_api_key:
-    description: "The Gemini AI API token to use for the action"
+    description: 'The Gemini AI API token to use for the action'
     required: true
   github_token:
-    description: "The GitHub token to use for the action"
+    description: 'The GitHub token to use for the action'
     required: true
   github_repository:
-    description: "The GitHub repository to use for the action"
+    description: 'The GitHub repository to use for the action'
     required: true
-    default: "${{ github.repository }}"
+    default: '${{ github.repository }}'
   github_pull_request_number:
-    description: "The GitHub pull request number to use for the action"
+    description: 'The GitHub pull request number to use for the action'
     required: true
-    default: "${{ github.event.pull_request.number }}"
+    default: '${{ github.event.pull_request.number }}'
   git_commit_hash:
-    description: "The GitHub commit hash to use for the action"
+    description: 'The GitHub commit hash to use for the action'
     required: true
-    default: "${{ github.event.pull_request.head.sha }}"
+    default: '${{ github.event.pull_request.head.sha }}'
   model:
-    description: "GPT model"
+    description: 'Gemini model'
     required: true
-    default: "text-davinci-003"
+    default: 'gemini-1.5-pro-latest'
   extra_prompt:
-    description: "Extra prompt for GPT"
+    description: 'Extra prompt for Gemini'
     required: false
-    default: ""
+    default: ''
   temperature:
-    description: "Temperature for GPT"
+    description: 'Temperature for Gemini'
     required: false
-    default: "0.7"
+    default: '0.1'
   max_tokens:
-    description: "Max tokens for GPT"
+    description: 'Maximum output tokens for Gemini'
     required: false
-    default: "256"
+    default: '512'
   top_p:
-    description: "Top p for GPT"
+    description: 'Top p for Gemini'
     required: false
-    default: "1"
+    default: '0.95'
   frequency_penalty:
-    description: "Frequency penalty for GPT"
+    description: 'Frequency penalty (unused for Gemini)'
     required: false
-    default: "0.0"
+    default: '0.0'
   presence_penalty:
-    description: "Presence penalty for GPT"
+    description: 'Presence penalty (unused for Gemini)'
     required: false
-    default: "0.0"
+    default: '0.0'
   pull_request_diff:
-    description: "Pull request diff"
+    description: 'Pull request diff'
     required: true
   pull_request_chunk_size:
-    description: "Pull request chunk size"
+    description: 'Pull request chunk size'
     required: false
-    default: "3500"
+    default: '3500'
   log_level:
-    description: "Log level"
+    description: 'Log level'
     required: false
-    default: "INFO"
+    default: 'INFO'
 
 outputs:
   entire_prompt_body:
-    description: "Entire prompt body"
+    description: 'Entire prompt body'
     value: ${{ steps.gpt.outputs.entire_prompt_body }}
   review_result:
-    description: "Review result"
+    description: 'Review result'
     value: ${{ steps.gpt.outputs.review_result }}
 
 branding:
-  icon: "code"
-  color: "blue"
+  icon: 'code'
+  color: 'blue'
 
 runs:
   using: docker
@@ -96,12 +96,12 @@ runs:
     GITHUB_PULL_REQUEST_NUMBER: ${{ inputs.github_pull_request_number }}
     GIT_COMMIT_HASH: ${{ inputs.git_commit_hash }}
   args:
-    - "--model=${{ inputs.model }}"
-    - "--extra-prompt=${{ inputs.extra_prompt }}"
-    - "--temperature=${{ inputs.temperature }}"
-    - "--max-tokens=${{ inputs.max_tokens }}"
-    - "--top-p=${{ inputs.top_p }}"
-    - "--frequency-penalty=${{ inputs.frequency_penalty }}"
-    - "--presence-penalty=${{ inputs.presence_penalty }}"
-    - "--diff-chunk-size=${{ inputs.pull_request_chunk_size }}"
-    - "--diff=${{ inputs.pull_request_diff }}"
+    - '--model=${{ inputs.model }}'
+    - '--extra-prompt=${{ inputs.extra_prompt }}'
+    - '--temperature=${{ inputs.temperature }}'
+    - '--max-tokens=${{ inputs.max_tokens }}'
+    - '--top-p=${{ inputs.top_p }}'
+    - '--frequency-penalty=${{ inputs.frequency_penalty }}'
+    - '--presence-penalty=${{ inputs.presence_penalty }}'
+    - '--diff-chunk-size=${{ inputs.pull_request_chunk_size }}'
+    - '--diff=${{ inputs.pull_request_diff }}'
