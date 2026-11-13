@@ -37,7 +37,7 @@ inputs:
   model:
     description: 'Gemini model'
     required: true
-    default: 'gemini-1.5-pro-latest'
+    default: 'gemini-3.8-flash'
   extra_prompt:
     description: 'Extra prompt for Gemini'
     required: false

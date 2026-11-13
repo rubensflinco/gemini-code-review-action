@@ -63,7 +63,7 @@ jobs:
             cat "diff.txt";
             echo 'EOF';
           } >> $GITHUB_OUTPUT
-      - uses: rubensflinco/gemini-code-review-action@1.0.5
+      - uses: rubensflinco/gemini-code-review-action@1.0.6
         name: "Code Review by Gemini AI"
         id: review
         with:
@@ -72,7 +72,7 @@ jobs:
           github_repository: ${{ github.repository }}
           github_pull_request_number: ${{ github.event.pull_request.number }}
           git_commit_hash: ${{ github.event.pull_request.head.sha }}
-          model: "gemini-1.5-pro-latest"
+          model: "gemini-3.8-flash"
           pull_request_diff: |-
             ${{ steps.get_diff.outputs.pull_request_diff }}
           pull_request_chunk_size: "3500"
